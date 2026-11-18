@@ -13,6 +13,6 @@ Mira el directo, lee el código con OCR y te lo manda al celular (ntfy) + lo cop
 4. Te llega "Bot conectado". Cuando salga un código, llega al instante: mantén pulsada la notificación → copiar → pégalo en la app.
 
 ## Opciones
-- `--crop 0,60,100,100` solo lee la mitad inferior de la pantalla (más rápido, menos errores).
+- Por defecto solo lee el cuadro "CODIGO" de abajo a la derecha. `--crop 0,0,100,100` para toda la pantalla.
 - `--debug` muestra todo lo que lee (para ver si capta el código).
 - `--regex "..."` si el código no es formato XXXX-XXXX-XXXX.

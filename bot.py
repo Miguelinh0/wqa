@@ -12,8 +12,8 @@ import requests
 import streamlink
 from rapidocr_onnxruntime import RapidOCR
 
-# Formato PlayStation: XXXX-XXXX-XXXX (con o sin guiones / espacios)
-DEFAULT_REGEX = r"\b([A-Z0-9]{4})[-\s]?([A-Z0-9]{4})[-\s]?([A-Z0-9]{4})\b"
+# Formato del directo: "CODIGO: F355-HPQJ-B5B8" (guiones obligatorios para no confundir frases)
+DEFAULT_REGEX = r"([A-Z0-9]{4})\s*-\s*([A-Z0-9]{4})\s*-\s*([A-Z0-9]{4})"
 
 
 def get_stream_url(page_url):
@@ -49,8 +49,8 @@ def main():
     ap.add_argument("--topic", required=True, help="Tema de ntfy al que esta suscrito tu celular")
     ap.add_argument("--regex", default=DEFAULT_REGEX, help="Formato del codigo")
     ap.add_argument("--every", type=float, default=1.0, help="Segundos entre capturas")
-    ap.add_argument("--crop", default=None,
-                    help="Zona a leer en %% x1,y1,x2,y2 (ej: 0,60,100,100 = mitad inferior). Mas rapido.")
+    ap.add_argument("--crop", default="60,55,100,85",
+                    help="Zona a leer en %% x1,y1,x2,y2 (ej: 0,60,100,100 = mitad inferior). Por defecto: el cuadro "CODIGO" de abajo a la derecha. Usa 0,0,100,100 para toda la pantalla.")
     ap.add_argument("--debug", action="store_true", help="Muestra todo el texto que lee")
     args = ap.parse_args()
 
