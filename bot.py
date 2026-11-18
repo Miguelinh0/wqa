@@ -55,11 +55,32 @@ def frames(page_url, fps):
          "-vf", f"fps={fps},scale={W}:{H}", "-f", "rawvideo", "-pix_fmt", "bgr24", "-"],
         stdin=sl.stdout, stdout=subprocess.PIPE)
     size = W * H * 3
-    try:
+    import threading
+    latest = {"f": None, "id": 0, "end": False}
+    cond = threading.Condition()
+
+    def reader():
         while True:
             buf = ff.stdout.read(size)
-            if len(buf) < size:
-                return
+            with cond:
+                if len(buf) < size:
+                    latest["end"] = True
+                    cond.notify()
+                    return
+                latest["f"] = buf  # se queda solo con la mas nueva
+                latest["id"] += 1
+                cond.notify()
+
+    threading.Thread(target=reader, daemon=True).start()
+    seen_id = 0
+    try:
+        while True:
+            with cond:
+                while latest["id"] == seen_id and not latest["end"]:
+                    cond.wait()
+                if latest["end"]:
+                    return
+                seen_id, buf = latest["id"], latest["f"]
             yield np.frombuffer(buf, np.uint8).reshape(H, W, 3)
     finally:
         ff.kill()
@@ -71,8 +92,8 @@ def main():
     ap.add_argument("url")
     ap.add_argument("--topic", required=True)
     ap.add_argument("--regex", default=DEFAULT_REGEX)
-    ap.add_argument("--fps", type=float, default=3)
-    ap.add_argument("--crop", default="60,55,100,85", help="Zona en %% x1,y1,x2,y2")
+    ap.add_argument("--fps", type=float, default=5)
+    ap.add_argument("--crop", default="68,60,100,80", help="Zona en %% x1,y1,x2,y2")
     args = ap.parse_args()
 
     pattern = re.compile(args.regex)
