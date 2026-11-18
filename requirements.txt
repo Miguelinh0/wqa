@@ -1,0 +1,5 @@
+streamlink
+opencv-python
+rapidocr-onnxruntime
+requests
+pyperclip
