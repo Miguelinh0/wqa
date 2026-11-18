@@ -37,24 +37,33 @@ def get_stream_url(page_url):
     return next(iter(streams.values())).url
 
 
-def frames(url, fps):
+def frames(page_url, fps):
+    """streamlink (baja latencia) -> ffmpeg sin buffer -> frames."""
     try:
         import imageio_ffmpeg
         exe = imageio_ffmpeg.get_ffmpeg_exe()
     except Exception:
         exe = "ffmpeg"
-    cmd = [exe, "-loglevel", "error", "-i", url,
-           "-vf", f"fps={fps},scale={W}:{H}", "-f", "rawvideo", "-pix_fmt", "bgr24", "-"]
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    sl = subprocess.Popen(
+        ["streamlink", "--twitch-low-latency", "--twitch-disable-ads",
+         "--hls-live-edge", "1", "--stream-segment-threads", "2",
+         "--stdout", page_url, "720p60,720p,best"],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    ff = subprocess.Popen(
+        [exe, "-loglevel", "error", "-fflags", "nobuffer", "-flags", "low_delay",
+         "-probesize", "500000", "-analyzeduration", "0", "-i", "-",
+         "-vf", f"fps={fps},scale={W}:{H}", "-f", "rawvideo", "-pix_fmt", "bgr24", "-"],
+        stdin=sl.stdout, stdout=subprocess.PIPE)
     size = W * H * 3
     try:
         while True:
-            buf = p.stdout.read(size)
+            buf = ff.stdout.read(size)
             if len(buf) < size:
                 return
             yield np.frombuffer(buf, np.uint8).reshape(H, W, 3)
     finally:
-        p.kill()
+        ff.kill()
+        sl.kill()
 
 
 def main():
@@ -62,7 +71,7 @@ def main():
     ap.add_argument("url")
     ap.add_argument("--topic", required=True)
     ap.add_argument("--regex", default=DEFAULT_REGEX)
-    ap.add_argument("--fps", type=float, default=2)
+    ap.add_argument("--fps", type=float, default=3)
     ap.add_argument("--crop", default="60,55,100,85", help="Zona en %% x1,y1,x2,y2")
     args = ap.parse_args()
 
@@ -84,7 +93,7 @@ def main():
             continue
         send(args.topic, "Conectado al directo. Mirando la pantalla...")
         n, last_alive, last_hint = 0, time.time(), 0
-        for frame in frames(url, args.fps):
+        for frame in frames(args.url, args.fps):
             n += 1
             crop = frame[int(y1 * H):int(y2 * H), int(x1 * W):int(x2 * W)]
             result, _ = ocr(crop)
