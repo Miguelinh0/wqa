@@ -1,5 +1,5 @@
 streamlink
-opencv-python
+numpy
 rapidocr-onnxruntime
 requests
 pyperclip

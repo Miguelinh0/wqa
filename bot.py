@@ -1,101 +1,103 @@
-"""Bot que mira un directo, lee codigos con OCR y te los manda al celular.
+"""Bot que mira un directo, lee codigos con OCR y te los manda al celular (ntfy).
 
 Uso:
-    python bot.py URL_DEL_DIRECTO --topic MI_TEMA_SECRETO
+    python bot.py URL_DEL_DIRECTO --topic MI_TEMA
 """
 import argparse
 import re
+import subprocess
 import time
 
-import cv2
+import numpy as np
 import requests
 import streamlink
 from rapidocr_onnxruntime import RapidOCR
 
-# Formato del directo: "CODIGO: F355-HPQJ-B5B8" (guiones obligatorios para no confundir frases)
+# Formato del directo: "CODIGO: F355-HPQJ-B5B8" (guiones obligatorios)
 DEFAULT_REGEX = r"([A-Z0-9]{4})\s*-\s*([A-Z0-9]{4})\s*-\s*([A-Z0-9]{4})"
+W, H = 1280, 720
+
+
+def send(topic, msg, title="Bot", prio="default"):
+    print(f"[ntfy] {title}: {msg}", flush=True)
+    try:
+        requests.post(f"https://ntfy.sh/{topic}", data=msg.encode(),
+                      headers={"Title": title, "Priority": prio}, timeout=5)
+    except Exception as e:
+        print("Error ntfy:", e, flush=True)
 
 
 def get_stream_url(page_url):
     streams = streamlink.streams(page_url)
     if not streams:
-        raise SystemExit("No encontre el stream. ¿Esta en vivo? ¿El link es correcto?")
+        raise RuntimeError("no hay stream (¿esta en vivo?)")
     for q in ("720p", "720p60", "best"):
         if q in streams:
             return streams[q].url
     return next(iter(streams.values())).url
 
 
-def notify(topic, code):
+def frames(url, fps):
+    cmd = ["ffmpeg", "-loglevel", "error", "-i", url,
+           "-vf", f"fps={fps},scale={W}:{H}", "-f", "rawvideo", "-pix_fmt", "bgr24", "-"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    size = W * H * 3
     try:
-        requests.post(
-            f"https://ntfy.sh/{topic}",
-            data=code.encode(),
-            headers={"Title": "CODIGO NUEVO", "Priority": "urgent", "Tags": "video_game"},
-            timeout=5,
-        )
-    except Exception as e:
-        print("Error enviando notificacion:", e)
-    try:
-        import pyperclip
-        pyperclip.copy(code)
-    except Exception:
-        pass
+        while True:
+            buf = p.stdout.read(size)
+            if len(buf) < size:
+                return
+            yield np.frombuffer(buf, np.uint8).reshape(H, W, 3)
+    finally:
+        p.kill()
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("url", help="Link del directo (YouTube, Twitch, Kick...)")
-    ap.add_argument("--topic", required=True, help="Tema de ntfy al que esta suscrito tu celular")
-    ap.add_argument("--regex", default=DEFAULT_REGEX, help="Formato del codigo")
-    ap.add_argument("--every", type=float, default=1.0, help="Segundos entre capturas")
-    ap.add_argument("--crop", default="60,55,100,85",
-                    help="Zona a leer en %% x1,y1,x2,y2 (ej: 0,60,100,100 = mitad inferior). Por defecto: el cuadro CODIGO de abajo a la derecha. Usa 0,0,100,100 para toda la pantalla.")
-    ap.add_argument("--debug", action="store_true", help="Muestra todo el texto que lee")
+    ap.add_argument("url")
+    ap.add_argument("--topic", required=True)
+    ap.add_argument("--regex", default=DEFAULT_REGEX)
+    ap.add_argument("--fps", type=float, default=2)
+    ap.add_argument("--crop", default="60,55,100,85", help="Zona en %% x1,y1,x2,y2")
     args = ap.parse_args()
 
     pattern = re.compile(args.regex)
     ocr = RapidOCR()
     seen = set()
-    notify(args.topic, "Bot conectado, esperando codigos...")
+    x1, y1, x2, y2 = (float(v) / 100 for v in args.crop.split(","))
+    send(args.topic, f"Bot iniciado. Buscando el directo {args.url}")
+    fails = 0
 
     while True:
         try:
             url = get_stream_url(args.url)
-        except BaseException as e:
-            print("Stream no disponible, reintento en 15s:", e)
+        except Exception as e:
+            fails += 1
+            if fails in (1, 10, 40):
+                send(args.topic, f"No pude abrir el directo: {e}. Sigo intentando.")
             time.sleep(15)
             continue
-        cap = cv2.VideoCapture(url)
-        print("Conectado al directo. Mirando...")
-        last = 0.0
-        while cap.isOpened():
-            if not cap.grab():
-                break
-            now = time.time()
-            if now - last < args.every:
-                continue
-            last = now
-            ok, frame = cap.retrieve()
-            if not ok:
-                continue
-            if args.crop:
-                x1, y1, x2, y2 = (float(v) / 100 for v in args.crop.split(","))
-                h, w = frame.shape[:2]
-                frame = frame[int(y1 * h):int(y2 * h), int(x1 * w):int(x2 * w)]
-            result, _ = ocr(frame)
+        send(args.topic, "Conectado al directo. Mirando la pantalla...")
+        n, last_alive, last_hint = 0, time.time(), 0
+        for frame in frames(url, args.fps):
+            n += 1
+            crop = frame[int(y1 * H):int(y2 * H), int(x1 * W):int(x2 * W)]
+            result, _ = ocr(crop)
             text = " ".join(r[1] for r in (result or [])).upper()
-            if args.debug and text:
-                print("[OCR]", text)
+            found = False
             for m in pattern.finditer(text):
-                code = "-".join(m.groups()) if m.groups() else m.group(0)
-                if code in seen:
-                    continue
-                seen.add(code)
-                print(f"\a>>> CODIGO: {code}  ({time.strftime('%H:%M:%S')})")
-                notify(args.topic, code)
-        cap.release()
-        print("Se corto el stream, reconectando...")
+                found = True
+                code = "-".join(m.groups())
+                if code not in seen:
+                    seen.add(code)
+                    send(args.topic, code, title="CODIGO NUEVO", prio="urgent")
+            if not found and "COD" in text and time.time() - last_hint > 30:
+                last_hint = time.time()
+                send(args.topic, f"Vi el cuadro pero no lei bien: {text}", prio="high")
+            if time.time() - last_alive > 600:
+                last_alive = time.time()
+                send(args.topic, f"Sigo mirando ({n} capturas revisadas)", prio="low")
+        send(args.topic, "Se corto el video, reconectando...", prio="low")
         time.sleep(2)
 
 
