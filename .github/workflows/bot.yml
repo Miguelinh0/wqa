@@ -1,0 +1,22 @@
+name: Bot codigos
+on:
+  push:
+    branches: [claude/play-codes-live-bot-s7e3zh]
+  workflow_dispatch:
+concurrency:
+  group: bot
+  cancel-in-progress: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      STREAM_URL: https://www.twitch.tv/rubius
+      NTFY_TOPIC: codigos-62496d98
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install streamlink opencv-python-headless rapidocr-onnxruntime requests
+      - run: python -u bot.py "$STREAM_URL" --topic "$NTFY_TOPIC"

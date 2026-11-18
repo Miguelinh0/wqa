@@ -50,7 +50,7 @@ def main():
     ap.add_argument("--regex", default=DEFAULT_REGEX, help="Formato del codigo")
     ap.add_argument("--every", type=float, default=1.0, help="Segundos entre capturas")
     ap.add_argument("--crop", default="60,55,100,85",
-                    help="Zona a leer en %% x1,y1,x2,y2 (ej: 0,60,100,100 = mitad inferior). Por defecto: el cuadro "CODIGO" de abajo a la derecha. Usa 0,0,100,100 para toda la pantalla.")
+                    help="Zona a leer en %% x1,y1,x2,y2 (ej: 0,60,100,100 = mitad inferior). Por defecto: el cuadro CODIGO de abajo a la derecha. Usa 0,0,100,100 para toda la pantalla.")
     ap.add_argument("--debug", action="store_true", help="Muestra todo el texto que lee")
     args = ap.parse_args()
 
@@ -60,7 +60,12 @@ def main():
     notify(args.topic, "Bot conectado, esperando codigos...")
 
     while True:
-        url = get_stream_url(args.url)
+        try:
+            url = get_stream_url(args.url)
+        except BaseException as e:
+            print("Stream no disponible, reintento en 15s:", e)
+            time.sleep(15)
+            continue
         cap = cv2.VideoCapture(url)
         print("Conectado al directo. Mirando...")
         last = 0.0
