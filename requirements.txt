@@ -3,3 +3,4 @@ numpy
 rapidocr-onnxruntime
 requests
 pyperclip
+imageio-ffmpeg

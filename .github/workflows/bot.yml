@@ -18,5 +18,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install streamlink numpy rapidocr-onnxruntime requests
+      - run: pip install streamlink numpy imageio-ffmpeg rapidocr-onnxruntime requests
       - run: python -u bot.py "$STREAM_URL" --topic "$NTFY_TOPIC"

@@ -38,7 +38,12 @@ def get_stream_url(page_url):
 
 
 def frames(url, fps):
-    cmd = ["ffmpeg", "-loglevel", "error", "-i", url,
+    try:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        exe = "ffmpeg"
+    cmd = [exe, "-loglevel", "error", "-i", url,
            "-vf", f"fps={fps},scale={W}:{H}", "-f", "rawvideo", "-pix_fmt", "bgr24", "-"]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     size = W * H * 3
