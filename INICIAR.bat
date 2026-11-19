@@ -9,13 +9,13 @@ if not defined PY (
   python --version >nul 2>nul && set "PY=python"
 )
 if not defined PY (
-  if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+  if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set PY="%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
 )
 if not defined PY (
   echo Python no esta instalado. Instalando Python 3.12, espera...
   winget install -e --id Python.Python.3.12 --scope user --accept-source-agreements --accept-package-agreements
   if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
-    set "PY=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    set PY="%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
   ) else (
     echo.
     echo No pude instalar Python solo. Instalalo desde https://www.python.org/downloads/
