@@ -3,7 +3,7 @@
 ## chat_bot.py (recomendado, el más rápido) — lee el CHAT y canjea solo
 Solo acepta códigos escritos por **mods o el streamer** (evita códigos falsos de trolls).
 
-En tu PC (Windows/Mac/Linux, con Python 3):
+**Windows: doble clic en `INICIAR.bat`** (instala todo solo). O a mano:
 ```
 pip install playwright pyperclip
 python -m playwright install chromium
