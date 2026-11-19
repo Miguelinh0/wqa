@@ -6,6 +6,7 @@ Uso:
 import argparse
 import re
 import subprocess
+import sys
 import time
 
 import numpy as np
@@ -45,7 +46,7 @@ def frames(page_url, fps):
     except Exception:
         exe = "ffmpeg"
     sl = subprocess.Popen(
-        ["streamlink", "--twitch-low-latency", "--twitch-disable-ads",
+        [sys.executable, "-m", "streamlink", "--twitch-low-latency", "--twitch-disable-ads",
          "--hls-live-edge", "1", "--stream-segment-threads", "2",
          "--stdout", page_url, "720p60,720p,best"],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)

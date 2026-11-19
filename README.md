@@ -1,5 +1,13 @@
 # Bots de códigos del directo
 
+## video_canje.py — VE el directo, lee el código de la pantalla y lo CANJEA solo
+**Windows: doble clic en `INICIAR_VIDEO_GREFG.bat`.**
+1. Se abre un navegador: inicia sesión en PlayStation con la cuenta **española** y deja abierta la página de canjear código.
+2. Presiona Enter en la ventana negra.
+3. Cuando el código salga en pantalla, lo lee y lo canjea solo (también lo copia y pita).
+
+Otro canal: `python video_canje.py NOMBRE_CANAL`. Solo una zona: `--crop x1,y1,x2,y2` (en %). Ver lo que lee: `--debug`.
+
 ## chat_bot.py (recomendado, el más rápido) — lee el CHAT y canjea solo
 Solo acepta códigos escritos por **mods o el streamer** (evita códigos falsos de trolls).
 

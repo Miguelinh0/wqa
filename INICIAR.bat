@@ -26,13 +26,17 @@ if not defined PY (
 )
 echo Usando: %PY%
 
-if not exist ".listo" (
+if not exist ".listo2" (
   echo Instalando lo necesario, solo la primera vez...
-  %PY% -m pip install --upgrade playwright pyperclip || goto error
+  %PY% -m pip install --upgrade playwright pyperclip streamlink numpy imageio-ffmpeg rapidocr-onnxruntime requests || goto error
   %PY% -m playwright install chromium || goto error
-  echo ok> .listo
+  echo ok> .listo2
 )
-%PY% chat_bot.py rubius
+if /i "%~1"=="video" (
+  %PY% video_canje.py thegrefg
+) else (
+  %PY% chat_bot.py rubius
+)
 pause
 exit /b
 

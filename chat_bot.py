@@ -103,6 +103,12 @@ class Redeemer:
         self.page = self.ctx.pages[0] if self.ctx.pages else self.ctx.new_page()
         self.page.goto(url.replace("?code={code}", "").replace("{code}", ""))
 
+    def remember(self):
+        """Usa como pagina de canje la que el usuario dejo abierta."""
+        if "{code}" not in self.url:
+            self.url = self.page.url
+            print("Pagina de canje:", self.url, flush=True)
+
     def ready(self):
         if "{code}" not in self.url:
             self.page.goto(self.url)
@@ -144,6 +150,7 @@ def main():
         red = Redeemer(args.url or REDEEM_URLS[args.tienda])
         input("\n>>> Inicia sesion en el navegador, deja abierta la pagina de CANJEAR CODIGO "
               "y presiona Enter aqui... ")
+        red.remember()
 
     used = set()
     for line in chat_lines(args.canal):
