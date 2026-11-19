@@ -9,10 +9,19 @@ import argparse
 import re
 import time
 
+import cv2
+
 from rapidocr_onnxruntime import RapidOCR
 
 from bot import H, W, frames
 from chat_bot import REDEEM_URLS, Redeemer, beep
+
+MAX_VARIANTES = 3  # intentos por codigo (lecturas distintas del mismo codigo borroso)
+
+
+def parecido(a, b):
+    return sum(x != y for x, y in zip(a, b)) <= 3
+
 
 CODE_RE = re.compile(r"([A-Z0-9]{4})\s*-\s*([A-Z0-9]{4})\s*-\s*([A-Z0-9]{4})")
 
@@ -46,7 +55,7 @@ def main():
         for frame in frames(page_url, args.fps):
             n += 1
             crop = frame[int(y1 * H):int(y2 * H), int(x1 * W):int(x2 * W)]
-            result, _ = ocr(crop)
+            result, _ = ocr(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY))
             text = " ".join(r[1] for r in (result or [])).upper()
             if args.debug and text:
                 print("[OCR]", text, flush=True)
@@ -57,7 +66,12 @@ def main():
                 code = "-".join(m.groups())
                 if code in used:
                     continue
+                similares = [u for u in used if parecido(u, code)]
+                if len(similares) >= MAX_VARIANTES:
+                    continue
                 used.add(code)
+                if similares:
+                    print(f"   (lectura distinta del mismo codigo, la pruebo tambien)", flush=True)
                 print(f"\n>>> {time.strftime('%H:%M:%S')} CODIGO EN PANTALLA: {code}", flush=True)
                 beep()
                 try:
