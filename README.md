@@ -1,18 +1,25 @@
-# Bot de códigos del directo
+# Bots de códigos del directo
 
-Mira el directo, lee el código con OCR y te lo manda al celular (ntfy) + lo copia al portapapeles del PC.
+## chat_bot.py (recomendado, el más rápido) — lee el CHAT y canjea solo
+Solo acepta códigos escritos por **mods o el streamer** (evita códigos falsos de trolls).
 
-## Pasos (5 min)
-1. Celular: instala la app **ntfy** y suscríbete a un tema inventado, ej: `codigos-xyz-8812`.
-2. PC: instala Python 3 (en Windows marca "Add to PATH").
-3. En una terminal, dentro de esta carpeta:
-   ```
-   pip install -r requirements.txt
-   python bot.py "LINK_DEL_DIRECTO" --topic codigos-xyz-8812
-   ```
-4. Te llega "Bot conectado". Cuando salga un código, llega al instante: mantén pulsada la notificación → copiar → pégalo en la app.
+En tu PC (Windows/Mac/Linux, con Python 3):
+```
+pip install playwright pyperclip
+python -m playwright install chromium
+python chat_bot.py rubius
+```
+1. Se abre un navegador en la página de canje de PlayStation Store. **Inicia sesión** y deja abierta la página donde se escribe el código.
+2. Vuelve a la terminal y presiona **Enter**.
+3. Cuando un mod escriba un código, el bot lo escribe, presiona Enter y toca Canjear/Continuar/Confirmar solo. También lo copia y pita.
 
-## Opciones
-- Por defecto solo lee el cuadro "CODIGO" de abajo a la derecha. `--crop 0,0,100,100` para toda la pantalla.
-- `--debug` muestra todo lo que lee (para ver si capta el código).
-- `--regex "..."` si el código no es formato XXXX-XXXX-XXXX.
+Opciones:
+- `--tienda google` para Google Play en vez de PlayStation.
+- `--url "https://..."` para otra página de canje (usa `{code}` si el código va en la URL).
+- `--solo-avisar` no canjea, solo pita y copia el código.
+- `--todos` acepta códigos de cualquiera del chat (no recomendado).
+
+La sesión queda guardada en la carpeta `perfil_canje`, no hace falta loguearse de nuevo.
+
+## bot.py — lee el código desde el VIDEO (OCR)
+Más lento (retraso del video). Ver `python bot.py --help`.

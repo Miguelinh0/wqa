@@ -1,7 +1,5 @@
 name: Bot codigos
 on:
-  push:
-    branches: [claude/play-codes-live-bot-s7e3zh]
   workflow_dispatch:
 concurrency:
   group: bot
